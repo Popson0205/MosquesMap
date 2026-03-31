@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MosqueMap Admin — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#0D6E6E 0%,#095555 50%,#073d3d 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:white;border-radius:24px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.25)}
+    .logo{text-align:center;margin-bottom:28px}
+    .logo .icon{font-size:48px;margin-bottom:8px}
+    .logo h1{font-size:24px;font-weight:800;color:#0D6E6E}
+    .logo p{font-size:13px;color:#808080;margin-top:4px}
+    .group{margin-bottom:16px}
+    .group label{display:block;font-size:13px;font-weight:600;color:#3d3d3d;margin-bottom:6px}
+    .group input{width:100%;height:46px;border:1.5px solid #e5e5e5;border-radius:10px;padding:0 14px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s;background:#fcfcfc;color:#080808}
+    .group input:focus{border-color:#0D6E6E;background:white}
+    .btn{width:100%;height:48px;background:#0D6E6E;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s;margin-top:8px}
+    .btn:hover{background:#1a9090}
+    .btn:disabled{background:#c2c2c2;cursor:not-allowed}
+    .error{background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+    .demo{background:#e8f5f5;border-radius:10px;padding:12px 14px;margin-top:20px;font-size:12px;color:#0D6E6E;line-height:1.6}
+    .demo strong{display:block;margin-bottom:4px;font-weight:700}
+    .footer{text-align:center;font-size:12px;color:#a8a8a8;margin-top:20px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="icon">🕌</div>
+      <h1>MosqueMap Admin</h1>
+      <p>Management Portal — Nigeria & West Africa</p>
+    </div>
+    <div class="error" id="err"></div>
+    <div class="group">
+      <label>Email Address</label>
+      <input type="email" id="email" placeholder="admin@mosquemap.ng" value="admin@mosquemap.ng">
+    </div>
+    <div class="group">
+      <label>Password</label>
+      <input type="password" id="pass" placeholder="••••••••" value="MosqueMap2026!">
+    </div>
+    <button class="btn" id="btn" onclick="login()">Sign In →</button>
+    <div class="demo">
+      <strong>🔑 Demo Credentials</strong>
+      Email: admin@mosquemap.ng<br>
+      Password: MosqueMap2026!
+    </div>
+    <div class="footer">MosqueMap v2.0 · Nigeria & West Africa</div>
+  </div>
+  <script>
+    // If already have a valid token, go straight to dashboard
+    const existing = localStorage.getItem('mm_admin_token');
+    if (existing) {
+      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + existing } })
+        .then(r => { if (r.ok) window.location.replace('/'); })
+        .catch(() => {});
+    }
+
+    async function login() {
+      const btn = document.getElementById('btn');
+      const err = document.getElementById('err');
+      const email = document.getElementById('email').value.trim();
+      const pass = document.getElementById('pass').value;
+      if (!email || !pass) { showErr('Please fill in all fields'); return; }
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      err.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('mm_admin_token', data.token);
+          localStorage.setItem('mm_admin_user', JSON.stringify(data.user));
+          window.location.replace('/');
+        } else {
+          showErr(data.error || 'Login failed');
+          btn.disabled = false;
+          btn.textContent = 'Sign In →';
+        }
+      } catch(e) {
+        showErr('Connection error — please try again');
+        btn.disabled = false;
+        btn.textContent = 'Sign In →';
+      }
+    }
+
+    function showErr(msg) {
+      const el = document.getElementById('err');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+  </script>
+</body>
+</html>
